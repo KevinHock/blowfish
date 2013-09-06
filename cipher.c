@@ -1,16 +1,6 @@
-// No fopen fclose gets scanf etc
-// Only syscalls read write open close
-
-// prompt for pw if pFlag == 0
-
-// no d && e
-
-// if h exit
-
+// error check syscalls and malloc
 // ?how to test same file?
-
 // autoupdate variables $Revision$ or $ld$
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,6 +31,7 @@ int main(int argc, char **argv)
             //    If the -v option is given, the program should print the version string of the program (which you can take from RCS auto-update variables such as $Revision$ or $Id$).
 
              break;
+
 
      case 'h':
               fprintf(stderr, "The \"cipher\" program has the following usage:\n\n\tcipher [-devh] [-p PASSWD] infile outfile\n\nThe program will prompt the user to enter a password (or pass-phrase), then\nread infile, and then produce outfile.  If the -e option is given, the\nprogram should encrypt infile onto outfile, using the supplied user\npassword.  If the -d option is given, the reverse should happen: decrypt\ninfile onto outfile, using the supplied password.  Either the -d or -e\noptions (but not both) must be supplied (an exactly once).  Of course, if\nyou use the same password to encrypt and then decrypt a file, you should get\nback the same exact file data you started with.\n");
@@ -108,33 +99,34 @@ int main(int argc, char **argv)
   // calloc the last page and make it the mode of page size into file size
 
 
-  // char from[128], to[128];
-  // int len = 128;
+  char from[128]; 
+  char to[128];
+  int len = 128;
 
-  // /* define a structure to hold the key */
-  // BF_KEY key;
+  /* define a structure to hold the key */
+  BF_KEY key;
 
-  // /* a temp buffer to read user input (the user's password) */
-  // char temp_buf[16];
+  /* a temp buffer to read user input (the user's password) */
+  char temp_buf[16] = "password";
 
-  // /* don't worry about these two: just define/use them */
-  // int n = 0;			/* internal blowfish variables */
-  // unsigned char iv[8];		/* Initialization Vector */
+  /* don't worry about these two: just define/use them */
+  int n = 0;			/* internal blowfish variables */
+  unsigned char iv[8];		/* Initialization Vector */
 
-  // /* fill the IV with zeros (or any other fixed data) */
-  // memset(iv, 0, 8);
+  /* fill the IV with zeros (or any other fixed data) */
+  memset(iv, 0, 8);
 
   //  call this function once to setup the cipher key 
-  // BF_set_key(&key, 16, temp_buf);
-// 
-  /*
+  BF_set_key(&key, 16, temp_buf);
+  
+
   //  * This is how you encrypt an input char* buffer "from", of length "len"
   //  * onto output buffer "to", using key "key".  Jyst pass "iv" and "&n" as
   //  * shown, and don't forget to actually tell the function to BF_ENCRYPT.
-  //  */
-  // BF_cfb64_encrypt(from, to, len, &key, iv, &n, BF_ENCRYPT);
+  
+  BF_cfb64_encrypt(from, to, len, &key, iv, &n, BF_ENCRYPT);
 
-  // /* Decrypting is the same: just pass BF_DECRYPT instead */
-  // BF_cfb64_encrypt(from, to, len, &key, iv, &n, BF_DECRYPT);
+  /* Decrypting is the same: just pass BF_DECRYPT instead */
+  BF_cfb64_encrypt(from, to, len, &key, iv, &n, BF_DECRYPT);
 
 }
