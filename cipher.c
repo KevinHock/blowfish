@@ -78,13 +78,13 @@ int main(int argc, char **argv)
     struct stat inputfile;
     struct stat* ptif = &inputfile;
     stat((*(argv+argc-2)), ptif);
-    printf("%zd\n", inputfile.st_size);
+    printf("%jd\n", inputfile.st_size);
     // Check if readable
     // Permission to read to
     // Make sure it's a file and not anything special
     // What could go wrong with open and read
     printf("ALL GOOD I GUESS\n");
-    open(*(argv+argc-2),0,0,fdin);
+    open(*(argv+argc-2),O_RDONLY,0);
   }
 
   if (!strcmp(*(argv+argc-1),"-")){
@@ -100,11 +100,12 @@ int main(int argc, char **argv)
     struct stat* ptof = &outputfile;
     stat((*(argv+argc-2)), ptof);
     printf("ALL GOOD I GUESS\n");
-    printf("%zd\n", outputfile.st_size);
-    // open(*(argv+argc-1),0,0,fdin);
+    printf("%jd\n", outputfile.st_size);
+    open(*(argv+argc-1),O_WRONLY,0);
   }
 
-
+  int pgsize = getpagesize();
+  // calloc the last page and make it the mode of page size into file size
 
 
   // char from[128], to[128];
