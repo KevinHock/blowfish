@@ -9,7 +9,14 @@
 #include <pwd.h>    //For getpass(3)
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include "blowfish.h"
+
+void err_quit(char *errmsg){
+  fputs(errmsg, stderr);
+  fflush(NULL);
+  exit(1);
+}
 
 int main(int argc, char **argv)
 {
@@ -39,7 +46,8 @@ int main(int argc, char **argv)
               break;
      case 'p':
               password = malloc(strlen(optarg+1));
-              //ghi
+              if(!password)
+                err_quit("malloc failed");
               strcpy(password, optarg);
               printf("password is %s\n", password);
               pflag=1;
@@ -69,9 +77,19 @@ int main(int argc, char **argv)
     struct stat inputfile;
     struct stat* ptif = &inputfile;
     stat((*(argv+argc-2)), ptif);
-    printf("%jd\n", inputfile.st_size);
+    printf("%lld\n", inputfile.st_size);
+
+    struct stat buf;
+    lstat(*(argv+argc-2),&buf);
+    if(S_ISREG(buf.st_mode)){
+      printf("REG FIEL\n");
+    }
     // Check if readable
     // Permission to read to
+    int accessrv = access(*(argv+argc-2), R_OK);
+    if (accessrv==-1){
+      fprintf(stderr, "Oh dear, something went wrong with a()! %s\n", strerror(errno));
+    }
     // Make sure it's a file and not anything special
     // What could go wrong with open and read
     printf("ALL GOOD I GUESS\n");
@@ -91,7 +109,7 @@ int main(int argc, char **argv)
     struct stat* ptof = &outputfile;
     stat((*(argv+argc-2)), ptof);
     printf("ALL GOOD I GUESS\n");
-    printf("%jd\n", outputfile.st_size);
+    printf("%lld\n", outputfile.st_size);
     open(*(argv+argc-1),O_WRONLY,0);
   }
 
@@ -102,7 +120,7 @@ int main(int argc, char **argv)
   char from[128]; 
   char to[128];
   int len = 128;
-
+  strcpy(from, "AAAAAAAAA");
   /* define a structure to hold the key */
   BF_KEY key;
 
@@ -124,9 +142,13 @@ int main(int argc, char **argv)
   //  * onto output buffer "to", using key "key".  Jyst pass "iv" and "&n" as
   //  * shown, and don't forget to actually tell the function to BF_ENCRYPT.
   
-  BF_cfb64_encrypt(from, to, len, &key, iv, &n, BF_ENCRYPT);
-
+  BF_cfb64_encrypt(from, to, 128, &key, iv, &n, BF_ENCRYPT);
+  printf("from is %s\n", from);
+  printf("TO IS %s\n", to);
   /* Decrypting is the same: just pass BF_DECRYPT instead */
-  BF_cfb64_encrypt(from, to, len, &key, iv, &n, BF_DECRYPT);
+  BF_cfb64_encrypt(to, from, 128, &key, iv, &n, BF_DECRYPT);
+
+  printf("from is %s\n", from);
+  printf("TO IS %s\n", to);
 
 }
