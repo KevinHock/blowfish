@@ -14,15 +14,19 @@
 #include "blowfish.h"
 #include "cipher.h"
 
-int ipf=0;
+int ipf;
+int dflag;
+int eflag;
+int pflag; 
 
 int main(int argc, char **argv){
-  int ch, dflag=0, eflag=0, pflag=0; 
+  int cmdopt;
   char* password;
 
   jessie();
-  while ((ch = getopt(argc, argv, "p:devh")) != -1) {
-     switch (ch) {
+
+  while ((cmdopt = getopt(argc, argv, "p:devh")) != -1) {
+     switch (cmdopt) {
      case 'd':
               dflag = 1;
               break;
@@ -32,19 +36,17 @@ int main(int argc, char **argv){
               break;
      
      case 'v':
-            //    If the -v option is given, the program should print the version string of the program (which you can take from RCS auto-update variables such as $Revision$ or $Id$).
+            //The program should print the version string of the program (which you can take from RCS auto-update variables such as $Revision$ or $Id$).
 
              break;
 
-
      case 'h':
-              fprintf(stderr, "The \"cipher\" program has the following usage:\n\n\tcipher [-devh] [-p PASSWD] infile outfile\n\nThe program will prompt the user to enter a password (or pass-phrase), then\nread infile, and then produce outfile.  If the -e option is given, the\nprogram should encrypt infile onto outfile, using the supplied user\npassword.  If the -d option is given, the reverse should happen: decrypt\ninfile onto outfile, using the supplied password.  Either the -d or -e\noptions (but not both) must be supplied (an exactly once).  Of course, if\nyou use the same password to encrypt and then decrypt a file, you should get\nback the same exact file data you started with.\n");
-              exit(1);
+              err_quit("The \"cipher\" program has the following usage:\n\n\tcipher [-devh] [-p PASSWD] infile outfile\n\nThe program will prompt the user to enter a password (or pass-phrase), then\nread infile, and then produce outfile.  If the -e option is given, the\nprogram should encrypt infile onto outfile, using the supplied user\npassword.  If the -d option is given, the reverse should happen: decrypt\ninfile onto outfile, using the supplied password.  Either the -d or -e\noptions (but not both) must be supplied (an exactly once).  Of course, if\nyou use the same password to encrypt and then decrypt a file, you should get\nback the same exact file data you started with.\n");
               break;
      case 'p':
               if(!(password = malloc(strlen(optarg+1))))
                 malloc_fail(__LINE__);  
-              strcpy(password, optarg);
+              strncpy(password, optarg, strlen(optarg));
               printf("password is %s\n", password);
               pflag=1;
               break;
@@ -54,11 +56,18 @@ int main(int argc, char **argv){
      }
   }
 
-  if (dflag && eflag){
-    printf("No encrypt and decrypt fool.\n");
-    exit(1);
-  }
+
+
+
+  // Need d or e and input file and output file
+  if (argc < 4)
+    err_quit("Not enough aruments. Please select to decrypt or encrypt and specify both an input and an output.\n");
+
+  // No decrypt and encrypt
+  if (dflag && eflag)
+    err_quit("No encrypt and decrypt fool.\nThe \"cipher\" program has the following usage:\n\n\tcipher [-devh] [-p PASSWD] infile outfile\n\nThe program will prompt the user to enter a password (or pass-phrase), then\nread infile, and then produce outfile.  If the -e option is given, the\nprogram should encrypt infile onto outfile, using the supplied user\npassword.  If the -d option is given, the reverse should happen: decrypt\ninfile onto outfile, using the supplied password.  Either the -d or -e\noptions (but not both) must be supplied (an exactly once).  Of course, if\nyou use the same password to encrypt and then decrypt a file, you should get\nback the same exact file data you started with.\n");
   
+  // Prompt for password
   if (pflag==0){
     if(!(password = malloc(_PASSWORD_LEN+1)))
       malloc_fail(__LINE__);
@@ -66,33 +75,63 @@ int main(int argc, char **argv){
     printf("Password is %s\n", password);   
   }
 
-  if (!strcmp(*(argv+argc-2),"-")){
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // Input is STDIN
+  if (!strcmp(*(argv+argc-2),STD))
         printf("fdin is stdin\n");
-  }else{
-    //lstat 2 FOR SYMBOLIC I BELIEVE
-    //stat 2
+  else{
     struct stat inputfile;
     struct stat* ptif = &inputfile;
+    
     stat((*(argv+argc-2)), ptif);
     printf("%lld\n", inputfile.st_size);
 
     struct stat buf;
     lstat(*(argv+argc-2),&buf);
-    if(S_ISREG(buf.st_mode)){
-      printf("REG FIEL\n");
-    }
+    if(S_ISREG(buf.st_mode))
+      printf("REGULAR FILE\n");
+    else
+      err_quit("Input file not a regular file.\n");
+    
     // Check if readable
     // Permission to read to
-    int accessrv = access(*(argv+argc-2), R_OK);
-    if (accessrv==-1){
-      fprintf(stderr, "Oh dear, something went wrong with a()! %s\n", strerror(errno));
+    if ((access(*(argv+argc-2), R_OK))==-1){
+      fprintf(stderr, "Accessing the file got messed up! %s\n", strerror(errno));
+      exit(1);
     }
+
+
     // Make sure it's a file and not anything special
     // What could go wrong with open and read
     printf("ALL GOOD I GUESS\n");
     ipf = open(*(argv+argc-2),O_RDONLY,0);
   }
 
+
+
+
+
+
+
+
+
+
+  // Output
   if (!strcmp(*(argv+argc-1),"-")){
         printf("fdout is stdout\n");
   }else{
@@ -110,6 +149,18 @@ int main(int argc, char **argv){
     open(*(argv+argc-1),O_WRONLY,0);
   }
 
+
+
+
+
+
+
+
+
+
+  // DO FILE COPYING
+  // 
+  // 
   int pgsize = getpagesize();
   // calloc the last page and make it the mode of page size into file size
   char from[128]; 
@@ -181,7 +232,6 @@ int main(int argc, char **argv){
   /* Decrypting is the same: just pass BF_DECRYPT instead */
   // BF_cfb64_encrypt(from, to, len, &key, iv, &n, BF_DECRYPT);
 
-   printf("lol %lu\n", strlen("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
   return 0;
 }
 
@@ -201,17 +251,13 @@ int main(int argc, char **argv){
 
 
 
-
-
-
-
-
-
-void err_quit(char *errmsg, int linenumber){
+void err_quit(char *errmsg){
   fputs(errmsg, stderr);
   fflush(NULL);
   exit(1);
 }
+
+
 
 void jessie(){
   printf("          _______  _______  _______  _______  _______  _______          \n");
@@ -252,8 +298,11 @@ void jessie(){
   printf("                                                           \n");
 }
 
+
+
 void malloc_fail(int linenumber){
-  err_quit("malloc fail @ line %d \n",linenumber);
+  fprintf(stderr, "malloc fail @ line %d \n",linenumber);
+  exit(1);
 }
 
 
