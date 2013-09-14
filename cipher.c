@@ -1,8 +1,8 @@
 // do file stuff without blowfish
-// check at least 2 args first
-// error check syscalls and malloc
+// error check syscalls
 // ?how to test same file?
 // autoupdate variables $Revision$ or $ld$
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,14 +14,20 @@
 #include "blowfish.h"
 #include "cipher.h"
 
-int ipf;
+
+
+int input_file;
+int output_file;
 int dflag;
 int eflag;
 int pflag; 
 
+
 int main(int argc, char **argv){
   int cmdopt;
   char* password;
+  size_t max_size_t = (size_t)-1;
+
 
   jessie();
 
@@ -44,6 +50,8 @@ int main(int argc, char **argv){
               err_quit("The \"cipher\" program has the following usage:\n\n\tcipher [-devh] [-p PASSWD] infile outfile\n\nThe program will prompt the user to enter a password (or pass-phrase), then\nread infile, and then produce outfile.  If the -e option is given, the\nprogram should encrypt infile onto outfile, using the supplied user\npassword.  If the -d option is given, the reverse should happen: decrypt\ninfile onto outfile, using the supplied password.  Either the -d or -e\noptions (but not both) must be supplied (an exactly once).  Of course, if\nyou use the same password to encrypt and then decrypt a file, you should get\nback the same exact file data you started with.\n");
               break;
      case 'p':
+              if(strlen(optarg)==max_size_t)
+                err_quit("Nice try.");
               if(!(password = malloc(strlen(optarg+1))))
                 malloc_fail(__LINE__);  
               strncpy(password, optarg, strlen(optarg));
@@ -52,7 +60,7 @@ int main(int argc, char **argv){
               break;
      case '?':
      default:
-              printf("blag\n");
+              printf("\n");
      }
   }
 
@@ -78,78 +86,74 @@ int main(int argc, char **argv){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
   // Input is STDIN
   if (!strcmp(*(argv+argc-2),STD))
-        printf("fdin is stdin\n");
+        printf("Input is STDIN\n");
   else{
-    struct stat inputfile;
-    struct stat* ptif = &inputfile;
-    
-    stat((*(argv+argc-2)), ptif);
-    printf("%lld\n", inputfile.st_size);
+    struct stat stat_input_file;
+    struct stat* pointer_input_file = &stat_input_file;
+    struct stat lstatfiller;
 
-    struct stat buf;
-    lstat(*(argv+argc-2),&buf);
-    if(S_ISREG(buf.st_mode))
-      printf("REGULAR FILE\n");
+
+    stat((*(argv+argc-2)), pointer_input_file);
+    printf("Size of input file is %lld\n", stat_input_file.st_size);
+
+
+    lstat(*(argv+argc-2),&lstatfiller);
+    if(S_ISREG(lstatfiller.st_mode))
+      printf("REGULAR INPUT FILE\n");
     else
       err_quit("Input file not a regular file.\n");
+
     
-    // Check if readable
     // Permission to read to
     if ((access(*(argv+argc-2), R_OK))==-1){
-      fprintf(stderr, "Accessing the file got messed up! %s\n", strerror(errno));
+      fprintf(stderr, "Accessing the input file got messed up, %s\n", strerror(errno));
       exit(1);
     }
 
 
     // Make sure it's a file and not anything special
     // What could go wrong with open and read
-    printf("ALL GOOD I GUESS\n");
-    ipf = open(*(argv+argc-2),O_RDONLY,0);
+    if((input_file = open(*(argv+argc-2),O_RDONLY,0))==-1)
+      fprintf(stderr, "Opening input file got messed up, %s \n", strerror(errno));
   }
 
 
 
 
+  // Output is STDOUT
+  if (!strcmp(*(argv+argc-1),STD))
+        printf("Output is STDOUT\n");
+  else{
+    struct stat stat_output_file;
+    struct stat* pointer_output_file = &stat_output_file;
+    struct stat lstatfiller;
 
 
+    stat((*(argv+argc-1)), pointer_output_file);
+    printf("Size of output file is %lld\n", stat_output_file.st_size);
 
 
+    lstat(*(argv+argc-1),&lstatfiller);
+    if(S_ISREG(lstatfiller.st_mode))
+      printf("REGULAR output FILE\n");
+    else
+      err_quit("output file not a regular file.\n");
+
+    
+    // Permission to read to
+    if ((access(*(argv+argc-1), R_OK))==-1){
+      fprintf(stderr, "Accessing the output file got messed up, %s\n", strerror(errno));
+      exit(1);
+    }
 
 
-  // Output
-  if (!strcmp(*(argv+argc-1),"-")){
-        printf("fdout is stdout\n");
-  }else{
-    // Check if readable
-    // Permission to write to
     // Make sure it's a file and not anything special
-    // What could go wrong with open and write
-    //lstat 2 FOR SYMBOLIC I BELIEVE
-    //stat 2
-    struct stat outputfile;
-    struct stat* ptof = &outputfile;
-    stat((*(argv+argc-2)), ptof);
-    printf("ALL GOOD I GUESS\n");
-    printf("%lld\n", outputfile.st_size);
-    open(*(argv+argc-1),O_WRONLY,0);
+    // What could go wrong with open and read
+    if((output_file = open(*(argv+argc-1),O_RDONLY,0))==-1)
+      fprintf(stderr, "Opening output file got messed up, %s \n", strerror(errno));
   }
-
-
 
 
 
@@ -166,7 +170,8 @@ int main(int argc, char **argv){
   char from[128]; 
   char *hehe;
   hehe = malloc(128);
-  int amt_read = read(ipf,from,128);
+  int amt_read = read(input_file,from,128);
+
   if(amt_read != 128){
     // Partial Read
   }
@@ -179,47 +184,97 @@ int main(int argc, char **argv){
 
   // if(n>0)
     // readfails;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   
 
-  char to[128];
-  int len = 128;
-  int i;
+  // char to[128];
+  // int len = 128;
+  // int i;
   
-  strcpy(from, "A");
-  for(i=0; i<126;i++)
-    strcat(from, "A");
+  // strcpy(from, "A");
+  // for(i=0; i<126;i++)
+  //   strcat(from, "A");
 
 
 
-  /* define a structure to hold the key */
-  BF_KEY key;
+  // /* define a structure to hold the key */
+  // BF_KEY key;
 
-  /* a temp buffer to read user input (the user's password) */
-  char temp_buf[16] = "password";
+  // /* a temp buffer to read user input (the user's password) */
+  // char temp_buf[16] = "password";
 
-  /* don't worry about these two: just define/use them */
-  int n = 0;			/* internal blowfish variables */
-  unsigned char iv[8];		/* Initialization Vector */
+  // /* don't worry about these two: just define/use them */
+  // int n = 0;			/* internal blowfish variables */
+  // unsigned char iv[8];		/* Initialization Vector */
 
-  /* fill the IV with zeros (or any other fixed data) */
-  memset(iv, 0, 8);
+  // /* fill the IV with zeros (or any other fixed data) */
+  // memset(iv, 0, 8);
 
-  //  call this function once to setup the cipher key 
-  BF_set_key(&key, 16, temp_buf);
+  // /*  call this function once to setup the cipher key */
+  // BF_set_key(&key, 16, temp_buf);
   
 
-  //  * This is how you encrypt an input char* buffer "from", of length "len"
-  //  * onto output buffer "to", using key "key".  Jyst pass "iv" and "&n" as
-  //  * shown, and don't forget to actually tell the function to BF_ENCRYPT.
+  //  This is how you encrypt an input char* buffer "from", of length "len"
+  // onto output buffer "to", using key "key".  Jyst pass "iv" and "&n" as
+  // shown, and don't forget to actually tell the function to BF_ENCRYPT.
   
-  BF_cfb64_encrypt(from, to, 128, &key, iv, &n, BF_ENCRYPT);
-  printf("from is %s\n", from);
-  printf("TO IS %s\n", to);
-  /* Decrypting is the same: just pass BF_DECRYPT instead */
-  BF_cfb64_encrypt(from, to, 128, &key, iv, &n, BF_DECRYPT);
+  // BF_cfb64_encrypt(from, to, 128, &key, iv, &n, BF_ENCRYPT);
+  // printf("from is %s\n", from);
+  // printf("TO IS %s\n", to);
+  // /* Decrypting is the same: just pass BF_DECRYPT instead */
+  // BF_cfb64_encrypt(from, to, 128, &key, iv, &n, BF_DECRYPT);
 
-  printf("from is %s\n", from);
-  printf("TO IS %s\nto.length is %lu", to, strlen(to));
+  // printf("from is %s\n", from);
+  // printf("TO IS %s\nto.length is %lu", to, strlen(to));
 
 
   /*
@@ -227,10 +282,10 @@ int main(int argc, char **argv){
    * onto output buffer "to", using key "key".  Jyst pass "iv" and "&n" as
    * shown, and don't forget to actually tell the function to BF_ENCRYPT.
    */
-  // BF_cfb64_encrypt(from, to, len, &key, iv, &n, BF_ENCRYPT);
+  /* BF_cfb64_encrypt(from, to, len, &key, iv, &n, BF_ENCRYPT);*/
 
   /* Decrypting is the same: just pass BF_DECRYPT instead */
-  // BF_cfb64_encrypt(from, to, len, &key, iv, &n, BF_DECRYPT);
+  /* BF_cfb64_encrypt(from, to, len, &key, iv, &n, BF_DECRYPT);*/
 
   return 0;
 }
